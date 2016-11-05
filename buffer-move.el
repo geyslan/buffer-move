@@ -1,4 +1,4 @@
-;;; buffer-move.el ---
+;;; buffer-move.el --- easily swap buffers
 
 ;; Copyright (C) 2004-2014  Lucas Bonnet <lucas@rincevent.net>
 ;; Copyright (C) 2014  Mathis Hofer <mathis@fsfe.org>
@@ -91,6 +91,12 @@
   :group 'buffer-move
   :type 'symbol)
 
+(defcustom buffer-move-stay-after-swap nil
+  "If set to non-nil, point will stay in the current window
+  so it will not be moved when swapping buffers. This setting
+  only has effect if `buffer-move-behavior' is set to 'swap."
+  :group 'buffer-move
+  :type 'boolean)
 
 (defun buf-move-to (direction)
   "Helper function to move the current buffer to the window in the given
@@ -115,7 +121,9 @@
       ;; switch other window to this buffer
       (set-window-buffer other-win buf-this-buf)
 
-      (select-window other-win))))
+      (when (or (null buffer-move-stay-after-swap)
+                (eq buffer-move-behavior 'move))
+        (select-window other-win)))))
 
 ;;;###autoload
 (defun buf-move-up ()
@@ -151,6 +159,20 @@
   (interactive)
   (buf-move-to 'right))
 
+;;;###autoload
+(defun buf-move ()
+  "Begin moving the current buffer to different windows.
+
+Use the arrow keys to move in the desired direction.  Pressing
+any other key exits this function."
+  (interactive)
+  (let ((map (make-sparse-keymap)))
+    (dolist (x '(("<up>" . buf-move-up)
+                 ("<left>" . buf-move-left)
+                 ("<down>" . buf-move-down)
+                 ("<right>" . buf-move-right)))
+      (define-key map (read-kbd-macro (car x)) (cdr x)))
+    (set-transient-map map t)))
 
 (provide 'buffer-move)
 ;;; buffer-move.el ends here
